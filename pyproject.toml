@@ -1,8 +1,8 @@
 [tool.poetry]
-name = "password-manager-end"
+name = "password-manager"
 version = "0.1.0"
 description = ""
-authors = ["Your Name <you@example.com>"]
+authors = ["Alberto Barrago <albertobarrago@gmail.com>"]
 
 [tool.poetry.dependencies]
 python = "^3.8"
