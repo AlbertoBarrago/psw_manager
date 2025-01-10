@@ -2,3 +2,4 @@
 passwords.json
 password_manager.log
 .env
+__pycache__
