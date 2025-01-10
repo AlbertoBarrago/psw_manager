@@ -80,8 +80,6 @@ class PasswordManager:
         self.window.grid_columnconfigure(0, weight=1)
         self.window.grid_columnconfigure(1, weight=2)
         self.window.grid_columnconfigure(2, weight=1)
-        self.window.grid_rowconfigure(0, weight=0)
-        self.window.grid_rowconfigure(1, weight=1)
 
         try:
             logo_img = PhotoImage(file="logo.png")
@@ -96,92 +94,107 @@ class PasswordManager:
 
         content_frame = Frame(self.window, bg=WINDOW_BG)
         content_frame.grid(row=1, column=0, columnspan=3, sticky='nsew', padx=20, pady=20)
-        content_frame.grid_columnconfigure(0, weight=1)
-        content_frame.grid_columnconfigure(1, weight=2)
+        content_frame.grid_columnconfigure(1, weight=1)
 
+        # Configuration for UI elements
         label_config = {'bg': WINDOW_BG, 'fg': TEXT_COLOR, 'anchor': 'e'}
-        entry_config = {'width': 35, 'bg': ENTRY_BG, 'fg': ENTRY_FG, 'insertbackground': 'white'}
-        tiny_config = {'width': 25, 'bg': ENTRY_BG, 'fg': ENTRY_FG, 'insertbackground': 'white'}
+        entry_config = {'bg': ENTRY_BG, 'fg': ENTRY_FG, 'insertbackground': 'white'}
+        button_config = {
+            'height': 2,
+            'width': 8,
+            'bg': 'lightgray',
+            'fg': 'black',
+            'font': ("Arial", 10),
+            'cursor': "hand2",
+            'bd': 0,
+        }
 
-        Label(content_frame, text="Website:", **label_config).grid(row=0, column=0, pady=5, padx=10, sticky='e')
-        self.website_entry = Entry(content_frame, **entry_config)
-        self.website_entry.grid(row=0, column=1, sticky='ew', padx=5)
+        # Website row with inline search
+        Label(content_frame, text="Website:", **label_config).grid(row=0, column=0, pady=5, padx=5, sticky='e')
+        website_frame = Frame(content_frame, bg=WINDOW_BG)
+        website_frame.grid(row=0, column=1, sticky='ew')
+        website_frame.grid_columnconfigure(0, weight=1)
 
-        Label(content_frame, text="Email:", **label_config).grid(row=1, column=0, pady=5, padx=10, sticky='e')
-        self.email_entry = Entry(content_frame, **entry_config)
-        self.email_entry.grid(row=1, column=1, sticky='ew', padx=5)
+        self.website_entry = Entry(website_frame, **entry_config)
+        self.website_entry.grid(row=0, column=0, sticky='ew')
+
+        search_button = Button(website_frame, text="Search", command=self.search_password, **button_config)
+        search_button.grid(row=0, column=1, padx=(5, 0))
+
+      # Email row
+        Label(content_frame, text="Email:", **label_config).grid(row=1, column=0, pady=5, padx=5, sticky='e')
+        email_frame = Frame(content_frame, bg=WINDOW_BG)
+        email_frame.grid(row=1, column=1, sticky='ew')
+        email_frame.grid_columnconfigure(0, weight=1)
+
+        self.email_entry = Entry(email_frame, **entry_config)
+        self.email_entry.grid(row=0, column=0, sticky='ew')
         self.email_entry.insert(0, self.default_email)
 
-        Label(content_frame, text="Password:", **label_config).grid(row=2, column=0, pady=5, padx=10, sticky='e')
+        show_all_button = Button(email_frame, text="Show All", command=self.show_all_passwords, **button_config)
+        show_all_button.grid(row=0, column=1, padx=(5, 0))
+
+        # Password row with generated button
+        Label(content_frame, text="Password:", **label_config).grid(row=2, column=0, pady=5, padx=5, sticky='e')
         password_frame = Frame(content_frame, bg=WINDOW_BG)
         password_frame.grid(row=2, column=1, sticky='ew')
         password_frame.grid_columnconfigure(0, weight=1)
 
-        self.password_entry = Entry(password_frame, **tiny_config)
+        self.password_entry = Entry(password_frame, **entry_config)
         self.password_entry.grid(row=0, column=0, sticky='ew')
 
-        generate_button = Button(password_frame,
-                                 text="Generate",
-                                 command=self.generate_password,
-                                 activebackground="blue",
-                                 activeforeground="white",
-                                 anchor="center",
-                                 bd=0,
-                                 bg="lightgray",
-                                 cursor="hand2",
-                                 fg="black",
-                                 font=("Arial", 12),
-                                 height=1,
-                                 padx=10,
-                                 pady=5,
-                                 width=5)
-
+        generate_button = Button(password_frame, text="Generate", command=self.generate_password, **button_config)
         generate_button.grid(row=0, column=1, padx=(5, 0))
 
-        buttons_frame_top = Frame(content_frame, bg=WINDOW_BG)
-        buttons_frame_top.grid(row=3, column=0, columnspan=3, pady=(20, 10))
-        self.create_button("Search", self.search_password, 0, 0).grid(in_=buttons_frame_top, row=0, column=0, padx=5)
-
+        # Bottom buttons frame
         buttons_frame = Frame(content_frame, bg=WINDOW_BG)
-        buttons_frame.grid(row=4, column=0, columnspan=3, pady=(10, 20))
+        buttons_frame.grid(row=3, column=0, columnspan=2, sticky='ew', pady=(20, 0))
+        buttons_frame.grid_columnconfigure(0, weight=1)
+        buttons_frame.grid_columnconfigure(1, weight=1)
+        buttons_frame.grid_columnconfigure(2, weight=1)
+        buttons_frame.grid_columnconfigure(3, weight=1)
 
-        self.create_button("Save", self.save, 0, 1).grid(in_=buttons_frame, row=0, column=1, padx=5)
-        self.create_button("Show All", self.show_all_passwords, 0, 2).grid(in_=buttons_frame, row=0, column=2, padx=5)
-        self.create_button("Clean", self.clean_entry_field, 0, 3).grid(in_=buttons_frame, row=0, column=3, padx=5)
-
-        self.window.grid_rowconfigure(1, weight=1)
+        # Create full-width bottom buttons
+        Button(buttons_frame, text="Save", command=self.save, **button_config).grid(row=0, column=0, sticky='ew',
+                                                                                    padx=2)
+        Button(buttons_frame, text="Clean", command=self.clean_entry_field, **button_config).grid(row=0, column=2,
+                                                                                                  sticky='ew', padx=2)
 
     def show_all_passwords(self):
-        try:
-            with open("passwords.json", "r", encoding="utf-8") as file:
-                data = json.load(file)
+        code = simpledialog.askstring("Security", "Enter security code:", show='*')
+        if code != SECRET_KEY:
+            messagebox.showerror("Error", "Incorrect security code")
+        else:
+            try:
+                with open("passwords.json", "r", encoding="utf-8") as file:
+                    data = json.load(file)
 
-            if not data:
+                if not data:
+                    messagebox.showinfo("Info", "No passwords stored yet")
+                    return
+
+                # Create a formatted string of all entries
+                password_list = "\n\n".join(
+                    f"Website: {site}\nEmail: {details['email']}\nCreated: {details['created_at']}"
+                    for site, details in data.items()
+                )
+
+                # Show in a scrolled text window
+                top = Toplevel(self.window)
+                top.title("Stored Passwords")
+                top.geometry("400x300")
+
+                text_widget = Text(top, wrap=WORD, bg='#2B2B2B', fg='#FFFFFF')
+                text_widget.pack(expand=True, fill='both')
+                text_widget.insert('1.0', password_list)
+                text_widget.config(state='disabled')
+
+                scrollbar = Scrollbar(top, command=text_widget.yview)
+                scrollbar.pack(side=RIGHT, fill=Y)
+                text_widget.config(yscrollcommand=scrollbar.set)
+
+            except FileNotFoundError:
                 messagebox.showinfo("Info", "No passwords stored yet")
-                return
-
-            # Create a formatted string of all entries
-            password_list = "\n\n".join(
-                f"Website: {site}\nEmail: {details['email']}\nCreated: {details['created_at']}"
-                for site, details in data.items()
-            )
-
-            # Show in a scrolled text window
-            top = Toplevel(self.window)
-            top.title("Stored Passwords")
-            top.geometry("400x300")
-
-            text_widget = Text(top, wrap=WORD, bg='#2B2B2B', fg='#FFFFFF')
-            text_widget.pack(expand=True, fill='both')
-            text_widget.insert('1.0', password_list)
-            text_widget.config(state='disabled')
-
-            scrollbar = Scrollbar(top, command=text_widget.yview)
-            scrollbar.pack(side=RIGHT, fill=Y)
-            text_widget.config(yscrollcommand=scrollbar.set)
-
-        except FileNotFoundError:
-            messagebox.showinfo("Info", "No passwords stored yet")
 
     def generate_password(self):
         alphabet = string.ascii_letters + string.digits + string.punctuation
