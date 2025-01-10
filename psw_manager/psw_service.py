@@ -77,14 +77,12 @@ class PasswordManager:
         return button
 
     def setup_ui(self):
-        # Configure grid weights
         self.window.grid_columnconfigure(0, weight=1)
         self.window.grid_columnconfigure(1, weight=2)
         self.window.grid_columnconfigure(2, weight=1)
         self.window.grid_rowconfigure(0, weight=0)
         self.window.grid_rowconfigure(1, weight=1)
 
-        # Logo section
         try:
             logo_img = PhotoImage(file="logo.png")
             logo_label = Label(self.window, image=logo_img, bg=WINDOW_BG)
@@ -96,7 +94,6 @@ class PasswordManager:
             title_label.grid(row=0, column=0, columnspan=3, pady=(20, 10))
             self.logger.error("Error loading logo %s", e)
 
-        # Main content frame
         content_frame = Frame(self.window, bg=WINDOW_BG)
         content_frame.grid(row=1, column=0, columnspan=3, sticky='nsew', padx=20, pady=20)
         content_frame.grid_columnconfigure(0, weight=1)
@@ -106,18 +103,15 @@ class PasswordManager:
         entry_config = {'width': 35, 'bg': ENTRY_BG, 'fg': ENTRY_FG, 'insertbackground': 'white'}
         tiny_config = {'width': 25, 'bg': ENTRY_BG, 'fg': ENTRY_FG, 'insertbackground': 'white'}
 
-        # Website row
         Label(content_frame, text="Website:", **label_config).grid(row=0, column=0, pady=5, padx=10, sticky='e')
         self.website_entry = Entry(content_frame, **entry_config)
         self.website_entry.grid(row=0, column=1, sticky='ew', padx=5)
 
-        # Email row
         Label(content_frame, text="Email:", **label_config).grid(row=1, column=0, pady=5, padx=10, sticky='e')
         self.email_entry = Entry(content_frame, **entry_config)
         self.email_entry.grid(row=1, column=1, sticky='ew', padx=5)
         self.email_entry.insert(0, self.default_email)
 
-        # Password row with Generate button
         Label(content_frame, text="Password:", **label_config).grid(row=2, column=0, pady=5, padx=10, sticky='e')
         password_frame = Frame(content_frame, bg=WINDOW_BG)
         password_frame.grid(row=2, column=1, sticky='ew')
@@ -144,12 +138,10 @@ class PasswordManager:
 
         generate_button.grid(row=0, column=1, padx=(5, 0))
 
-        # Action buttons on top
         buttons_frame_top = Frame(content_frame, bg=WINDOW_BG)
         buttons_frame_top.grid(row=3, column=0, columnspan=3, pady=(20, 10))
         self.create_button("Search", self.search_password, 0, 0).grid(in_=buttons_frame_top, row=0, column=0, padx=5)
 
-        # Action buttons at bottom
         buttons_frame = Frame(content_frame, bg=WINDOW_BG)
         buttons_frame.grid(row=4, column=0, columnspan=3, pady=(10, 20))
 
@@ -157,7 +149,6 @@ class PasswordManager:
         self.create_button("Show All", self.show_all_passwords, 0, 2).grid(in_=buttons_frame, row=0, column=2, padx=5)
         self.create_button("Clean", self.clean_entry_field, 0, 3).grid(in_=buttons_frame, row=0, column=3, padx=5)
 
-        # Ensure the window resizes properly
         self.window.grid_rowconfigure(1, weight=1)
 
     def show_all_passwords(self):
