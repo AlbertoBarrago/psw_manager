@@ -1,1 +1,4 @@
 .idea
+passwords.json
+password_manager.log
+.env

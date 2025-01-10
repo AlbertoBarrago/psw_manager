@@ -1,0 +1,14 @@
+[MASTER]
+disable=
+    C0111, # missing-docstring
+    C0103, # invalid-name
+    W0703  # broad-except
+
+[FORMAT]
+max-line-length=120
+
+[BASIC]
+good-names=i,j,k,ex,Run,_,id,f
+
+[MESSAGES CONTROL]
+disable=W0311,C0111,C0103,C0303
