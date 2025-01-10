@@ -16,6 +16,7 @@ from fernet import Fernet
 load_dotenv()
 
 SECRET_KEY = os.getenv("SECRET_KEY")
+SECRET_USER_EMAIL = os.getenv("SECRET_USER_EMAIL")
 WINDOW_BG = '#000000'
 TEXT_COLOR = '#FFFFFF'
 ENTRY_BG = '#1a1a1a'
@@ -23,7 +24,7 @@ ENTRY_FG = '#FFFFFF'
 
 
 class PasswordManager:
-    def __init__(self, default_email='albertobarrago@gmail.com'):
+    def __init__(self, default_email=SECRET_USER_EMAIL):
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.INFO)
         self.default_email = default_email
