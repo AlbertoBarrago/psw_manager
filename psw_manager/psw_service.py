@@ -102,7 +102,7 @@ class PasswordManager:
         entry_config = {'bg': ENTRY_BG, 'fg': ENTRY_FG, 'insertbackground': 'white'}
         button_config = {
             'height': 2,
-            'width': 8,
+            'width': 10,
             'bg': 'lightgray',
             'fg': 'black',
             'font': ("Arial", 10),
@@ -156,9 +156,9 @@ class PasswordManager:
         buttons_frame.grid_columnconfigure(3, weight=1)
 
         # Create full-width bottom buttons
-        Button(buttons_frame, text="Save", command=self.save, **button_config).grid(row=0, column=0, sticky='ew',
+        Button(buttons_frame, text="Save", command=self.save, **button_config).grid(row=0, column=2, sticky='ew',
                                                                                     padx=2)
-        Button(buttons_frame, text="Clean", command=self.clean_entry_field, **button_config).grid(row=0, column=2,
+        Button(buttons_frame, text="Clean", command=self.clean_entry_field, **button_config).grid(row=0, column=3,
                                                                                                   sticky='ew', padx=2)
 
     def show_all_passwords(self):
