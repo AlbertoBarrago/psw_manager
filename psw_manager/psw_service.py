@@ -34,10 +34,15 @@ class PasswordManager:
         self.window = Tk()
         self.window.title("Professional Password Manager")
         self.window.config(padx=50, pady=50)
+        self.window.grid_columnconfigure(0, weight=1)
+        self.window.grid_columnconfigure(1, weight=2)
+        self.window.grid_columnconfigure(2, weight=1)
 
         handler = logging.FileHandler('password_manager.log')
         handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
         self.logger.addHandler(handler)
+        self.logo_img = PhotoImage(file="logo.png")
+
 
         self.style = {
             'bg': '#000000',
@@ -78,14 +83,9 @@ class PasswordManager:
         return button
 
     def setup_ui(self):
-        self.window.grid_columnconfigure(0, weight=1)
-        self.window.grid_columnconfigure(1, weight=2)
-        self.window.grid_columnconfigure(2, weight=1)
-
         try:
-            logo_img = PhotoImage(file="logo.png")
-            logo_label = Label(self.window, image=logo_img, bg=WINDOW_BG)
-            logo_label.image = logo_img
+            logo_label = Label(self.window, image=self.logo_img, bg=WINDOW_BG)
+            logo_label.image = self.logo_img
             logo_label.grid(row=0, column=0, columnspan=3, pady=(20, 10))
         except FileNotFoundError as e:
             title_label = Label(self.window, text="Password Manager", font=("Helvetica", 20, "bold"),
@@ -122,7 +122,7 @@ class PasswordManager:
         search_button = Button(website_frame, text="Search", command=self.search_password, **button_config)
         search_button.grid(row=0, column=1, padx=(5, 0))
 
-      # Email row
+        # Email row
         Label(content_frame, text="Email:", **label_config).grid(row=1, column=0, pady=5, padx=5, sticky='e')
         email_frame = Frame(content_frame, bg=WINDOW_BG)
         email_frame.grid(row=1, column=1, sticky='ew')
