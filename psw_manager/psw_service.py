@@ -8,6 +8,8 @@ import json
 import secrets
 import string
 import logging
+from typing import cast
+
 import pyperclip
 from dotenv import load_dotenv
 
@@ -246,15 +248,16 @@ class PasswordManager:
 
         try:
             with open("passwords.json", mode="r", encoding="utf-8") as file:
-                data = json.load(file)
+                existing_data = json.load(file)
         except (FileNotFoundError, json.JSONDecodeError):
-            data = {}
+            existing_data = {}
 
-        data.update(new_data)
+        existing_data.update(new_data)
 
         # Write the updated data back to the file
         with open("passwords.json", mode="w", encoding="utf-8") as file:
-            json.load(file)
+            typed_file = cast('SupportsWrite[str]', file)
+            json.dump(existing_data, typed_file, indent=4)
 
         self.clear_fields()
         messagebox.showinfo("Success", "Password saved successfully!")
