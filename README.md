@@ -51,6 +51,12 @@ SECRET_USER_EMAIL='your@email.com'
 python3 main.py
 ```
 
+## Testing
+
+```bash
+uv run pytest tests/ -v
+```
+
 ## Project Structure
 
 ```
