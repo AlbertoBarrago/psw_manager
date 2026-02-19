@@ -1,5 +1,20 @@
+"""
+Password Manager application for securely storing and managing passwords.
+
+This module provides a graphical user interface (GUI) to manage passwords,
+generate new secure passwords, encrypt them, and securely store them. It allows
+users to perform actions like saving credentials, searching stored credentials,
+displaying all saved credentials, and generating random passwords.
+
+Classes:
+    PasswordManager: Provides functionalities for the password manager application.
+
+Functions:
+    _make_btn: Creates a styled button widget.
+    _field_row: Creates a labeled input field row with an action button.
+"""
 from base64 import b64encode
-from tkinter import messagebox, simpledialog, Tk, Toplevel, Text, Scrollbar, Y, RIGHT, WORD, END, Button, Label, \
+from tkinter import messagebox, simpledialog, Tk, Toplevel, Text, Scrollbar, Button, Label, \
     StringVar, Entry, PhotoImage, Frame, TclError
 from datetime import datetime
 import os
@@ -8,7 +23,6 @@ import json
 import secrets
 import string
 import logging
-from typing import cast
 
 import pyperclip
 from dotenv import load_dotenv
@@ -22,13 +36,69 @@ SECRET_USER_EMAIL = os.getenv("SECRET_USER_EMAIL")
 
 if not SECRET_KEY:
     raise ValueError("SECRET_KEY not set in .env file")
-WINDOW_BG = '#000000'
-TEXT_COLOR = '#FFFFFF'
-ENTRY_BG = '#1a1a1a'
-ENTRY_FG = '#FFFFFF'
+
+# ── Palette ───────────────────────────────────────────────────────────────────
+BG = '#0f0f0f'
+CARD = '#1a1a1a'
+BORDER = '#2e2e2e'
+BORDER_F = '#6366f1'
+ACCENT = '#6366f1'
+ACCENT_H = '#4f46e5'
+TEXT = '#f1f5f9'
+MUTED = '#64748b'
+ENTRY_BG = '#141414'
+BTN_SEC = '#262626'
+BTN_SEC_H = '#323232'
+
+# ── Typography ────────────────────────────────────────────────────────────────
+FONT = ('Helvetica Neue', 13)
+FONT_SM = ('Helvetica Neue', 11)
+FONT_TITLE = ('Helvetica Neue', 20, 'bold')
+
+
+# ── UI helpers ────────────────────────────────────────────────────────────
+
+def _make_btn(parent, text, command, style='secondary'):
+    bg, hover_bg = (ACCENT, ACCENT_H) if style == 'primary' else (BTN_SEC, BTN_SEC_H)
+
+    frame = Frame(parent, bg=bg, cursor='hand2')
+    label = Label(frame, text=text, bg=bg, fg=TEXT, font=FONT_SM, padx=16, pady=10, width=9, anchor='center')
+    label.pack()
+
+    for widget in (frame, label):
+        widget.bind('<Button-1>', lambda e: command())
+        widget.bind('<Enter>', lambda e: (frame.config(bg=hover_bg), label.config(bg=hover_bg)))
+        widget.bind('<Leave>', lambda e: (frame.config(bg=bg), label.config(bg=bg)))
+
+    return frame
+
+
+def _field_row(parent, label, btn_text, command):
+    Label(parent, text=label, bg=CARD, fg=MUTED, font=FONT_SM, anchor='w').pack(fill='x', pady=(16, 4))
+    row = Frame(parent, bg=CARD)
+    row.pack(fill='x')
+
+    border = Frame(row, bg=BORDER)
+    border.pack(side='left', fill='x', expand=True)
+
+    inner = Frame(border, bg=ENTRY_BG)
+    inner.pack(padx=1, pady=1, fill='x')
+
+    entry = Entry(inner, bg=ENTRY_BG, fg=TEXT, font=FONT, bd=0,
+                  highlightthickness=0, insertbackground=TEXT, relief='flat')
+    entry.pack(padx=(10, 8), fill='x', ipady=8)
+
+    entry.bind('<FocusIn>', lambda e, b=border: b.config(bg=BORDER_F))
+    entry.bind('<FocusOut>', lambda e, b=border: b.config(bg=BORDER))
+
+    _make_btn(row, btn_text, command).pack(side='left', padx=(8, 0))
+    return entry
 
 
 class PasswordManager:
+    """
+    Password Manager application for securely storing and managing passwords.
+    """
     def __init__(self, default_email=SECRET_USER_EMAIL):
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.INFO)
@@ -36,176 +106,117 @@ class PasswordManager:
         self.email_entry = None
         self.password_entry = None
         self.website_entry = None
-        self.window = Tk()
-        self.window.title("Professional Password Manager")
-        self.window.config(padx=50, pady=50)
-        self.window.grid_columnconfigure(0, weight=1)
-        self.window.grid_columnconfigure(1, weight=2)
-        self.window.grid_columnconfigure(2, weight=1)
 
-        handler = logging.FileHandler('password_manager.log')
+        self.window = Tk()
+        self.window.withdraw()
+        self.window.title("Password Manager")
+        self.window.config(bg=BG)
+        self.window.resizable(False, False)
+
+        handler = logging.FileHandler('audit.log')
         handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
         self.logger.addHandler(handler)
         self.logo_img = None
 
-        self.style = {
-            'bg': '#000000',
-            'fg': '#333333',
-            'font': ('Helvetica', 12),
-        }
-
-        self.window.configure(bg=self.style['bg'])
         self.setup_ui()
 
-    def create_button(self, text, command, row, column):
-        button = Button(
-            self.window,
-            text=text,
-            command=command,
-            activebackground="blue",
-            activeforeground="white",
-            anchor="center",
-            bd=3,
-            bg="lightgray",
-            cursor="hand2",
-            disabledforeground="gray",
-            fg="black",
-            font=("Arial", 12),
-            height=2,
-            highlightbackground="black",
-            highlightcolor="green",
-            highlightthickness=2,
-            justify="center",
-            overrelief="raised",
-            padx=10,
-            pady=5,
-            width=15,
-            wraplength=100
-        )
-        button.grid(row=row, column=column, padx=5, pady=5)
+        self.window.update_idletasks()
+        w = self.window.winfo_reqwidth()
+        h = self.window.winfo_reqheight()
+        x = (self.window.winfo_screenwidth() // 2) - (w // 2)
+        y = (self.window.winfo_screenheight() // 2) - (h // 2)
+        self.window.geometry(f"+{x}+{y}")
+        self.window.deiconify()
+        self.window.lift()
+        self.window.attributes("-topmost", True)
+        self.window.after(200, lambda: self.window.attributes("-topmost", False))
 
-        return button
+    # ── Setup ─────────────────────────────────────────────────────────────────
 
     def setup_ui(self):
+        # Header
+        header = Frame(self.window, bg=BG)
+        header.pack(fill='x', padx=30, pady=(30, 20))
+
         try:
             self.logo_img = PhotoImage(file="logo.png")
-            logo_label = Label(self.window, image=self.logo_img, bg=WINDOW_BG)
-            logo_label.image = self.logo_img
-            logo_label.grid(row=0, column=0, columnspan=3, pady=(20, 10))
+            logo_lbl = Label(header, image=self.logo_img, bg=BG)
+            logo_lbl.image = self.logo_img
+            logo_lbl.pack(side='left', padx=(0, 14))
         except TclError as e:
-            title_label = Label(self.window, text="Password Manager", font=("Helvetica", 20, "bold"),
-                                bg=WINDOW_BG, fg=TEXT_COLOR)
-            title_label.grid(row=0, column=0, columnspan=3, pady=(20, 10))
             self.logger.error("Error loading logo %s", e)
 
-        content_frame = Frame(self.window, bg=WINDOW_BG)
-        content_frame.grid(row=1, column=0, columnspan=3, sticky='nsew', padx=20, pady=20)
-        content_frame.grid_columnconfigure(1, weight=1)
+        title_block = Frame(header, bg=BG)
+        title_block.pack(side='left', anchor='center')
+        Label(title_block, text="Password Manager", bg=BG, fg=TEXT, font=FONT_TITLE).pack(anchor='w')
+        Label(title_block, text="Store your credentials securely", bg=BG, fg=MUTED, font=FONT_SM).pack(anchor='w')
 
-        # Configuration for UI elements
-        label_config = {'bg': WINDOW_BG, 'fg': TEXT_COLOR, 'anchor': 'e'}
-        entry_config = {'bg': ENTRY_BG, 'fg': ENTRY_FG, 'insertbackground': 'white'}
-        button_config = {
-            'height': 2,
-            'width': 10,
-            'bg': 'lightgray',
-            'fg': 'black',
-            'font': ("Arial", 10),
-            'cursor': "hand2",
-            'bd': 0,
-        }
+        # Form card
+        card = Frame(self.window, bg=CARD)
+        card.pack(fill='both', expand=True, padx=30, pady=(0, 30))
 
-        # Website row with inline search
-        Label(content_frame, text="Website:", **label_config).grid(row=0, column=0, pady=5, padx=5, sticky='e')
-        website_frame = Frame(content_frame, bg=WINDOW_BG)
-        website_frame.grid(row=0, column=1, sticky='ew')
-        website_frame.grid_columnconfigure(0, weight=1)
+        form = Frame(card, bg=CARD)
+        form.pack(padx=28, pady=28, fill='both', expand=True)
 
-        self.website_entry = Entry(website_frame, **entry_config)
-        self.website_entry.grid(row=0, column=0, sticky='ew')
+        self.website_entry = _field_row(form, "Website", "Search", self.search_password)
+        self.email_entry = _field_row(form, "Email", "Show All", self.show_all_passwords)
+        if self.default_email:
+            self.email_entry.insert(0, self.default_email)
+        self.password_entry = _field_row(form, "Password", "Generate", self.generate_password)
 
-        search_button = Button(website_frame, text="Search", command=self.search_password, **button_config)
-        search_button.grid(row=0, column=1, padx=(5, 0))
+        # Action buttons
+        actions = Frame(form, bg=CARD)
+        actions.pack(fill='x', pady=(24, 0))
+        _make_btn(actions, "Save", self.save, 'primary').pack(side='left', fill='x', expand=True, padx=(0, 8))
+        _make_btn(actions, "Clear", self.clear_fields).pack(side='left', fill='x', expand=True)
 
-        # Email row
-        Label(content_frame, text="Email:", **label_config).grid(row=1, column=0, pady=5, padx=5, sticky='e')
-        email_frame = Frame(content_frame, bg=WINDOW_BG)
-        email_frame.grid(row=1, column=1, sticky='ew')
-        email_frame.grid_columnconfigure(0, weight=1)
-
-        self.email_entry = Entry(email_frame, **entry_config)
-        self.email_entry.grid(row=0, column=0, sticky='ew')
-        self.email_entry.insert(0, self.default_email)
-
-        show_all_button = Button(email_frame, text="Show All", command=self.show_all_passwords, **button_config)
-        show_all_button.grid(row=0, column=1, padx=(5, 0))
-
-        # Password row with generated button
-        Label(content_frame, text="Password:", **label_config).grid(row=2, column=0, pady=5, padx=5, sticky='e')
-        password_frame = Frame(content_frame, bg=WINDOW_BG)
-        password_frame.grid(row=2, column=1, sticky='ew')
-        password_frame.grid_columnconfigure(0, weight=1)
-
-        self.password_entry = Entry(password_frame, **entry_config)
-        self.password_entry.grid(row=0, column=0, sticky='ew')
-
-        generate_button = Button(password_frame, text="Generate", command=self.generate_password, **button_config)
-        generate_button.grid(row=0, column=1, padx=(5, 0))
-
-        # Bottom buttons frame
-        buttons_frame = Frame(content_frame, bg=WINDOW_BG)
-        buttons_frame.grid(row=3, column=0, columnspan=2, sticky='ew', pady=(20, 0))
-        buttons_frame.grid_columnconfigure(0, weight=1)
-        buttons_frame.grid_columnconfigure(1, weight=1)
-        buttons_frame.grid_columnconfigure(2, weight=1)
-        buttons_frame.grid_columnconfigure(3, weight=1)
-
-        # Create full-width bottom buttons
-        Button(buttons_frame, text="Save", command=self.save, **button_config).grid(row=0, column=2, sticky='ew',
-                                                                                    padx=2)
-        Button(buttons_frame, text="Clean", command=self.clear_fields, **button_config).grid(row=0, column=3,
-                                                                                                  sticky='ew', padx=2)
+    # ── Features ──────────────────────────────────────────────────────────────
 
     def show_all_passwords(self):
         code = simpledialog.askstring("Security", "Enter security code:", show='*')
         if code != SECRET_KEY:
             messagebox.showerror("Error", "Incorrect security code")
-        else:
-            try:
-                with open("passwords.json", "r", encoding="utf-8") as file:
-                    data = json.load(file)
-
-                if not data:
-                    messagebox.showinfo("Info", "No passwords stored yet")
-                    return
-
-                # Create a formatted string of all entries
-                password_list = "\n\n".join(
-                    f"Website: {site}\nEmail: {details['email']}\nCreated: {details['created_at']}"
-                    for site, details in data.items()
-                )
-
-                # Show in a scrolled text window
-                top = Toplevel(self.window)
-                top.title("Stored Passwords")
-                top.geometry("400x300")
-
-                text_widget = Text(top, wrap=WORD, bg='#2B2B2B', fg='#FFFFFF')
-                text_widget.pack(expand=True, fill='both')
-                text_widget.insert('1.0', password_list)
-                text_widget.config(state='disabled')
-
-                scrollbar = Scrollbar(top, command=text_widget.yview)
-                scrollbar.pack(side=RIGHT, fill=Y)
-                text_widget.config(yscrollcommand=scrollbar.set)
-
-            except FileNotFoundError:
+            return
+        try:
+            with open("passwords.json", "r", encoding="utf-8") as file:
+                data = json.load(file)
+            if not data:
                 messagebox.showinfo("Info", "No passwords stored yet")
+                return
+
+            password_list = "\n\n".join(
+                f"Website: {site}\nEmail: {details['email']}\nCreated: {details['created_at']}"
+                for site, details in data.items()
+            )
+
+            top = Toplevel(self.window)
+            top.title("Stored Passwords")
+            top.config(bg=BG)
+            top.geometry("460x360")
+
+            Label(top, text="Stored Passwords", bg=BG, fg=TEXT,
+                  font=FONT_TITLE).pack(padx=24, pady=(24, 12), anchor='w')
+
+            container = Frame(top, bg=CARD)
+            container.pack(fill='both', expand=True, padx=24, pady=(0, 24))
+
+            text_widget = Text(container, wrap='word', bg=CARD, fg=TEXT, font=FONT,
+                               bd=0, highlightthickness=0, padx=16, pady=16)
+            text_widget.pack(side='left', fill='both', expand=True)
+            text_widget.insert('1.0', password_list)
+            text_widget.config(state='disabled')
+
+            scrollbar = Scrollbar(container, command=text_widget.yview, bg=CARD, troughcolor=CARD)
+            scrollbar.pack(side='right', fill='y')
+            text_widget.config(yscrollcommand=scrollbar.set)
+
+        except FileNotFoundError:
+            messagebox.showinfo("Info", "No passwords stored yet")
 
     def generate_password(self):
         alphabet = string.ascii_letters + string.digits + string.punctuation
         password = ''.join(secrets.choice(alphabet) for _ in range(20))
-        self.password_entry.delete(0, END)
+        self.password_entry.delete(0, 'end')
         self.password_entry.insert(0, password)
         pyperclip.copy(password)
 
@@ -218,9 +229,7 @@ class PasswordManager:
         key = self.generate_key(SECRET_KEY)
         f = Fernet(key)
         encrypted_password = f.encrypt(password.encode())
-        return {
-            "encrypted": encrypted_password.decode(),
-        }
+        return {"encrypted": encrypted_password.decode()}
 
     def decrypt_password(self, stored_data):
         self.logger.info("Retrieving clear password")
@@ -240,7 +249,6 @@ class PasswordManager:
             return
 
         psw_encrypted = self.encrypt_password(password)
-
         new_data = {
             website: {
                 "email": email,
@@ -255,17 +263,11 @@ class PasswordManager:
         except (FileNotFoundError, json.JSONDecodeError):
             existing_data = {}
             self.logger.info("No existing data found, creating new file")
-            with open("passwords.json", "w", encoding="utf-8") as file:
-                typed_file = cast('SupportsWrite[str]', file)
-                json.dump(existing_data, typed_file, indent=4)
-                self.logger.info("New file created")
 
         existing_data.update(new_data)
-
-        # Write the updated data back to the file
         with open("passwords.json", mode="w", encoding="utf-8") as file:
-            typed_file = cast('SupportsWrite[str]', file)
-            json.dump(existing_data, typed_file, indent=4)
+            json.dump(existing_data, file, indent=4)
+            self.logger.info("Saved entry for %s", website)
 
         self.clear_fields()
         messagebox.showinfo("Success", "Password saved successfully!")
@@ -279,39 +281,46 @@ class PasswordManager:
         try:
             with open("passwords.json", "r", encoding="utf-8") as file:
                 data = json.load(file)
-                if website in data:
-                    code = simpledialog.askstring("Security", "Enter security code:", show='*')
-                    if code == SECRET_KEY:
-                        entry = data[website]
 
-                        # Decrypt the stored password
-                        decrypted_password = self.decrypt_password(entry)
+            if website not in data:
+                messagebox.showinfo("Not Found", f"No details found for {website}")
+                return
 
-                        dialog = Toplevel(self.window)
-                        dialog.title(f"Details for {website}")
-                        dialog.config(bg='#2B2B2B', padx=20, pady=20)
+            code = simpledialog.askstring("Security", "Enter security code:", show='*')
+            if code != SECRET_KEY:
+                messagebox.showerror("Error", "Invalid security code")
+                return
 
-                        Label(dialog, text=f"Website: {website}", bg='#2B2B2B', fg='white').pack(anchor='w')
-                        Label(dialog, text=f"Email: {entry['email']}", bg='#2B2B2B', fg='white').pack(anchor='w')
+            entry = data[website]
+            decrypted_password = self.decrypt_password(entry)
 
-                        # Show decrypted password
-                        password_var = StringVar(value=decrypted_password)
-                        password_entry = Entry(dialog, textvariable=password_var, show='', bg='#3D3D3D', fg='white')
-                        password_entry.pack(anchor='w', pady=5)
+            dialog = Toplevel(self.window)
+            dialog.title(f"Details for {website}")
+            dialog.config(bg=BG)
+            dialog.resizable(False, False)
 
-                        Button(dialog,
-                               text="Copy Password",
-                               command=lambda: [pyperclip.copy(decrypted_password),
-                                                messagebox.showinfo("Success", "Password copied to clipboard!")]).pack(
-                            pady=10)
-                    else:
-                        messagebox.showerror("Error", "Invalid security code")
-                else:
-                    messagebox.showinfo("Not Found", f"No details found for {website}")
+            inner = Frame(dialog, bg=BG)
+            inner.pack(padx=28, pady=28, fill='both')
+
+            Label(inner, text=website, bg=BG, fg=TEXT, font=FONT_TITLE).pack(anchor='w')
+            Label(inner, text=entry['email'], bg=BG, fg=MUTED, font=FONT).pack(anchor='w', pady=(4, 20))
+
+            Label(inner, text="Password", bg=BG, fg=MUTED, font=FONT_SM, anchor='w').pack(fill='x', pady=(0, 4))
+            border = Frame(inner, bg=BORDER)
+            border.pack(fill='x', pady=(0, 20))
+            password_var = StringVar(value=decrypted_password)
+            Entry(border, textvariable=password_var, bg=ENTRY_BG, fg=TEXT,
+                  font=FONT, bd=0, highlightthickness=0, relief='flat').pack(padx=1, pady=1, fill='x', ipady=8)
+
+            _make_btn(inner, "Copy Password",
+                      lambda: [pyperclip.copy(decrypted_password),
+                               messagebox.showinfo("Copied", "Password copied to clipboard!")],
+                      'primary').pack(fill='x')
+
         except FileNotFoundError:
             messagebox.showinfo("Error", "No password file found")
 
     def clear_fields(self):
-        for entry in (self.website_entry, self.email_entry, self.password_entry):
-            entry.delete(0, END)
+        for entry in (self.website_entry, self.password_entry):
+            entry.delete(0, 'end')
         self.logger.info("Cleaned entry")

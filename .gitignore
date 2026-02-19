@@ -1,5 +1,6 @@
 .idea
 passwords.json
-password_manager.log
+audit.log
 .env
 __pycache__
+CLAUDE.md
