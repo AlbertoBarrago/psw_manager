@@ -1,6 +1,6 @@
 from base64 import b64encode
 from tkinter import messagebox, simpledialog, Tk, Toplevel, Text, Scrollbar, Y, RIGHT, WORD, END, Button, Label, \
-    StringVar, Entry, PhotoImage, Frame
+    StringVar, Entry, PhotoImage, Frame, TclError
 from datetime import datetime
 import os
 import hashlib
@@ -13,12 +13,15 @@ from typing import cast
 import pyperclip
 from dotenv import load_dotenv
 
-from fernet import Fernet
+from cryptography.fernet import Fernet
 
 load_dotenv()
 
 SECRET_KEY = os.getenv("SECRET_KEY")
 SECRET_USER_EMAIL = os.getenv("SECRET_USER_EMAIL")
+
+if not SECRET_KEY:
+    raise ValueError("SECRET_KEY not set in .env file")
 WINDOW_BG = '#000000'
 TEXT_COLOR = '#FFFFFF'
 ENTRY_BG = '#1a1a1a'
@@ -43,8 +46,7 @@ class PasswordManager:
         handler = logging.FileHandler('password_manager.log')
         handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
         self.logger.addHandler(handler)
-        self.logo_img = PhotoImage(file="logo.png")
-
+        self.logo_img = None
 
         self.style = {
             'bg': '#000000',
@@ -86,10 +88,11 @@ class PasswordManager:
 
     def setup_ui(self):
         try:
+            self.logo_img = PhotoImage(file="logo.png")
             logo_label = Label(self.window, image=self.logo_img, bg=WINDOW_BG)
             logo_label.image = self.logo_img
             logo_label.grid(row=0, column=0, columnspan=3, pady=(20, 10))
-        except FileNotFoundError as e:
+        except TclError as e:
             title_label = Label(self.window, text="Password Manager", font=("Helvetica", 20, "bold"),
                                 bg=WINDOW_BG, fg=TEXT_COLOR)
             title_label.grid(row=0, column=0, columnspan=3, pady=(20, 10))
@@ -160,7 +163,7 @@ class PasswordManager:
         # Create full-width bottom buttons
         Button(buttons_frame, text="Save", command=self.save, **button_config).grid(row=0, column=2, sticky='ew',
                                                                                     padx=2)
-        Button(buttons_frame, text="Clean", command=self.clean_entry_field, **button_config).grid(row=0, column=3,
+        Button(buttons_frame, text="Clean", command=self.clear_fields, **button_config).grid(row=0, column=3,
                                                                                                   sticky='ew', padx=2)
 
     def show_all_passwords(self):
@@ -223,7 +226,7 @@ class PasswordManager:
         self.logger.info("Retrieving clear password")
         key = self.generate_key(SECRET_KEY)
         f = Fernet(key)
-        decrypted_password = f.decrypt(stored_data["encrypted"].encode())
+        decrypted_password = f.decrypt(stored_data["password"].encode())
         return decrypted_password.decode()
 
     def save(self):
@@ -236,12 +239,12 @@ class PasswordManager:
             messagebox.showwarning("Warning", "Please fill all fields")
             return
 
-        encrypted = self.encrypt_password(password)
+        psw_encrypted = self.encrypt_password(password)
 
         new_data = {
             website: {
                 "email": email,
-                "encrypted": encrypted["encrypted"],
+                "password": psw_encrypted["encrypted"],
                 "created_at": timestamp
             }
         }
@@ -251,6 +254,11 @@ class PasswordManager:
                 existing_data = json.load(file)
         except (FileNotFoundError, json.JSONDecodeError):
             existing_data = {}
+            self.logger.info("No existing data found, creating new file")
+            with open("passwords.json", "w", encoding="utf-8") as file:
+                typed_file = cast('SupportsWrite[str]', file)
+                json.dump(existing_data, typed_file, indent=4)
+                self.logger.info("New file created")
 
         existing_data.update(new_data)
 
@@ -261,12 +269,6 @@ class PasswordManager:
 
         self.clear_fields()
         messagebox.showinfo("Success", "Password saved successfully!")
-
-    def clean_entry_field(self):
-        self.email_entry.delete(0, END)
-        self.password_entry.delete(0, END)
-        self.website_entry.delete(0, END)
-        self.logger.info("Cleaned entry")
 
     def search_password(self):
         website = self.website_entry.get()
@@ -312,3 +314,4 @@ class PasswordManager:
     def clear_fields(self):
         for entry in (self.website_entry, self.email_entry, self.password_entry):
             entry.delete(0, END)
+        self.logger.info("Cleaned entry")
